@@ -1,0 +1,307 @@
+﻿@page "/login"
+@using RdpRealTimePricing.Model
+@using RdpRealTimePricing.ViewModel
+@using Refinitiv.DataPlatform.Core
+@using System.Text.Json
+@using RdpRealTimePricing.Events
+@using RdpRealTimePricing.Model.Data;
+@implements IDisposable
+@inject DialogService DialogService
+@inject RdpSession RdpSession
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject AppData AppData
+<div class="container-fluid">
+        @if(!(RdpSession.IsLoggedIn) && RdpSession.SessionState != Session.State.Opened)
+        {
+            <RadzenCard>
+                <div class="row">
+                    <div class="col-md-2 col-sm-2 p-1">
+                        <RadzenLabel Text="Sign in to" Style="margin-left: 5px; margin-bottom: 20px; margin-right: 20px" />
+                    </div>
+                    <div class="col-md-10 col-sm-10 p-3">
+                        <RadzenRadioButtonList @bind-Value="LoginRdpVisible" TValue="bool" Orientation="Orientation.Horizontal" Change="@((args) => Change(args, "LoginOptionBtn"))">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="RDP" Value="true" />
+                                <RadzenRadioButtonListItem Text="Deployed TREP" Value="false" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    </div>
+                </div>
+            </RadzenCard>
+            @if (AppData.UseRDP)
+            {
+                <div class="row">
+                    <div class="col-md-6 col-sm-12 p-4">
+                        <RadzenTemplateForm TItem="RdpSession" Data="@RdpSession" Submit="@OnSubmitAsync" Visible="LoginRdpVisible">
+                            <RadzenFieldset Text=@CheckBoxTxt>
+                                <RadzenCard Visible="@LoginRdpVisible">
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3 align-right">
+                                            <RadzenLabel Text="Username"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenTextBox style="display: block;" Name="UsernameTxt" @bind-Value="RdpSession.RdpUser"/>
+                                            <RadzenRequiredValidator Component="UsernameTxt" Text="Username is required" Popup="true" Style="position: absolute"/>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3">
+                                            <RadzenLabel Text="Password"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenPassword style="display: block" Name="PasswordTxt" @bind-Value="RdpSession.RdpPassword"/>
+                                            <RadzenRequiredValidator Component="PasswordTxt" Text="Password is required" Popup="true" Style="position: absolute"/>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3">
+                                            <RadzenLabel Text="AppKey"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenTextBox style="display: block" Name="AppKeyTxt" @bind-Value="RdpSession.RdpAppKey"/>
+                                            <RadzenRequiredValidator Component="AppKeyTxt" Text="AppKey is required" Popup="true" Style="position: absolute"/>
+                                        </div>
+                                    </div>
+                                </RadzenCard>
+                                <RadzenCard>
+                                    <RadzenButton ButtonType="ButtonType.Submit" Text="Login" Icon="account_circle" Style="margin-bottom: 20px; width: 150px; background-color: steelblue"/>
+                                </RadzenCard>
+                            </RadzenFieldset>
+
+                            <RadzenProgressBar Value="100" Visible="@ProgressVisible" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-bottom: 20px"/>
+                        </RadzenTemplateForm>
+                    </div></div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-6 col-sm-12 p-4">
+                        <RadzenTemplateForm TItem="RdpSession" Data="@RdpSession" Submit="@OnSubmitAsync" Visible="@(!LoginRdpVisible)">
+                            <RadzenFieldset Text=@CheckBoxTxt>
+                                <RadzenCard Visible="@(!LoginRdpVisible)">
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3 align-right">
+                                            <RadzenLabel Text="Websocket Server"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenTextBox style="display: block;" Name="WsServerUri" @bind-Value="RdpSession.WebSocketHost"/>
+                                            <RadzenRequiredValidator Component="WsServerUri" Text="Websokcet Host is required. eg: wsserver:15000" Popup="true" Style="position: absolute"/>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3 align-right">
+                                            <RadzenLabel Text="DACS User"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenTextBox style="display: block;" Name="TrepUserTxt" @bind-Value="RdpSession.TrepUsername"/>
+                                            <RadzenRequiredValidator Component="TrepUserTxt" Text="DACS User is required" Popup="true" Style="position: absolute"/>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3">
+                                            <RadzenLabel Text="Application ID"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenTextBox style="display: block" Name="AppIdTxt" Placeholder="Optional. 256 is default." @bind-Value="RdpSession.TrepAppid"/>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-bottom: 48px">
+                                        <div class="col-md-3">
+                                            <RadzenLabel Text="DACS Position"/>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <RadzenTextBox style="display: block" Name="DACSPositionTxt" @bind-Value="RdpSession.TrepPosition"/>
+                                        </div>
+                                    </div>
+                                </RadzenCard>
+                                <RadzenCard>
+                                    <RadzenButton ButtonType="ButtonType.Submit" Text="Login" Icon="account_circle" Style="margin-bottom: 20px; width: 150px; background-color: steelblue"/>
+                                </RadzenCard>
+                            </RadzenFieldset>
+
+                            <RadzenProgressBar Value="100" Visible="@ProgressVisible" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="margin-bottom: 20px"/>
+                        </RadzenTemplateForm>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div>Loading...</div>
+        }
+        </div>
+        @code {
+            private bool ProgressVisible { get; set; } = false;
+            private bool LoginReadOnly { get; set; } = false;
+            private bool LoginSuccess { get; set; }
+            private bool LoginRdpVisible { get; set; } = true;
+            private string CheckBoxTxt { get; set; } = "RDP Login";
+            // Dialog Properties
+            private string DialogName { get; set; }
+            private string DialogRespType { get; set; }
+            private string DialogContent { get; set; }
+
+            protected override void OnInitialized()
+            {
+                AppData.AppMenuTxt = "Login";
+                if (RdpSession.IsLoggedIn && (RdpSession.SessionState == Session.State.Opened))
+                {
+                    NavigationManager.NavigateTo("marketpricerate");
+                }
+                else
+                {
+                    LoginSuccess = false;
+                    LoginRdpVisible = AppData.UseRDP;
+                    RdpSession.OnStateChangedEvents += OnConnection;
+                    RdpSession.OnSessionEvents += OnSession;
+                    // Set Logger level to Trace
+                }
+
+
+            }
+
+            Task OnSubmitAsync()
+            {
+                LoginReadOnly = true;
+                ProgressVisible = true;
+                this?.InvokeAsync(StateHasChanged);
+                return RdpSession.InitWebSocketConnectionAsync(AppData.UseRDP);
+
+            }
+
+            void Change(bool? value, string name)
+            {
+
+                CheckBoxTxt = LoginRdpVisible ? "RDP Login" : "TREP Login";
+                AppData.UseRDP = LoginRdpVisible;
+                this?.InvokeAsync(StateHasChanged);
+            }
+
+            private void OnConnection(object o, OnStateChangedEventArgs e)
+            {
+                switch (e.State)
+                {
+                    case Session.State.Opened:
+                        {
+                            LoginSuccess = true;
+                            LoginReadOnly = false;
+                            ProgressVisible = false;
+                            var msg = new NotificationMessage()
+                            {
+                                Severity = NotificationSeverity.Info,
+                                Summary = "Info:",
+                                Detail = " RdpSession is opened",
+                                Duration = 4000
+                            };
+                            ShowSessionNotificationAsync(msg).GetAwaiter();
+                        }
+                        break;
+                    case Session.State.Closed:
+                        {
+                            LoginSuccess = false;
+                            LoginReadOnly = false;
+                            ProgressVisible = false;
+                            var msg = new NotificationMessage()
+                            {
+                                Severity = NotificationSeverity.Warning,
+                                Summary = "Info:",
+                                Detail = " RdpSession is closed",
+                                Duration = 4000
+                            };
+                            ShowSessionNotificationAsync(msg).ConfigureAwait(false).GetAwaiter();
+                        }
+                        break;
+                    default:
+                        {
+                            LoginReadOnly = false;
+                            ProgressVisible = true;
+                            this?.InvokeAsync(StateHasChanged);
+                        }
+                        break;
+                }
+            }
+            private async void OnSession(object o, OnSessionEventArgs e)
+            {
+                DialogRespType = $"{e.EventCode}";
+                switch (e.EventCode)
+                {
+                    case Session.EventCode.SessionAuthenticationSuccess:
+                    case Session.EventCode.StreamAuthenticationSuccess:
+                    case Session.EventCode.StreamConnected:
+                        {
+                            if (RdpSession != null)
+                            {
+                                RdpSession.IsLoggedIn = true;
+                                AppData.UseRDP = LoginRdpVisible;
+                                AppData.CurrentUserName = AppData.UseRDP ? RdpSession.RdpUser : RdpSession.TrepUsername;
+                            }
+
+                            var msg = new NotificationMessage()
+                            {
+                                Severity = NotificationSeverity.Info,
+                                Summary = $"{e.EventCode}",
+                                Detail = $"{e.Message}",
+                                Duration = 4000
+                            };
+                            await ShowSessionNotificationAsync(msg).ConfigureAwait(false);
+                            NavigationManager.NavigateTo("marketpricerate");
+                        }
+                        break;
+                    case Session.EventCode.SessionAuthenticationFailed:
+                        {
+                            DialogName = "Session Authentication Failed";
+                            DialogContent = $"{e.Message}";
+                            await ShowSessionDialogAsync();
+
+                            this?.InvokeAsync(StateHasChanged);
+
+                        }
+                        break;
+                    default:
+                        {
+                            var msg = new NotificationMessage()
+                            {
+                                Severity = NotificationSeverity.Error,
+                                Summary = $"{e.EventCode}:",
+                                Detail = $"{e.Message}",
+                                Duration = 4000
+                            };
+                            ProgressVisible = false;
+                            await ShowSessionNotificationAsync(msg).ConfigureAwait(false);
+
+                            break;
+                        }
+                }
+
+
+            }
+
+
+            async Task ShowSessionDialogAsync() => await DialogService.OpenAsync(@DialogName, ds =>
+            @<RadzenCard Style="padding: 20px;">
+                <p Style="margin-bottom: 10px;">@DialogRespType</p>
+                <div class="row">
+                    <div class="col-md-12">
+                        @DialogContent
+                        <br /><RadzenButton Text="Close" Click="() => ds.Close(true)" Style="margin-bottom: 10px; width: 150px" />
+                    </div>
+                </div>
+            </RadzenCard>);
+
+            async Task ShowSessionNotificationAsync(NotificationMessage message)
+            {
+               if (message == null) return;
+               NotificationService.Notify(message);
+               await (this?.InvokeAsync(StateHasChanged)).ConfigureAwait(false);
+            }
+        }
+@functions {
+    public void Dispose()
+    {
+        RdpSession.OnStateChangedEvents -= OnConnection;
+        RdpSession.OnSessionEvents -= OnSession;
+        DialogService?.Dispose();
+    }
+}
+

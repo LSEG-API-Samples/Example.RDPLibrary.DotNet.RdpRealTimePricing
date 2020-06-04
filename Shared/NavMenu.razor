@@ -1,0 +1,43 @@
+﻿@using RdpRealTimePricing.Model.Data
+@inject AppData AppData
+<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">RDP Pricing</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="login">
+                @if (AppData.AppMenuTxt.ToLower() == "login")
+                {
+                    <span class="oi oi-account-login" aria-hidden="true"></span>
+                    @AppData.AppMenuTxt
+                }
+                else
+                {
+                    <span class="oi oi-monitor" aria-hidden="true"></span>
+                    @AppData.AppMenuTxt
+                }
+            </NavLink>
+        </li>
+    </ul>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
