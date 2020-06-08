@@ -478,6 +478,14 @@
 
     void Logoff()
     {
+        var notifyMessage = new NotificationMessage()
+        {
+            Summary = "Log off",
+            Detail = $"Log off please wait...",
+            Severity = NotificationSeverity.Success,
+            Duration = 1500
+        };
+        ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
         foreach (var item in AppData.DataCache.Keys)
         {
             RdpMarketPriceService.CloseItemStream(item);
@@ -518,13 +526,26 @@
                 ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
             }
         }
-        if (sentList.Any() && sentList.Count < 10)
+        if (sentList.Any() && sentList.Count <= 10)
         {
             var detailsTxt = $"Sent a new request for {string.Join(" ", sentList)}";
 
             var notifyMessage = new NotificationMessage()
             {
                 Summary = "Request Sent",
+                Detail = detailsTxt,
+                Severity = NotificationSeverity.Info,
+                Duration = 4000
+            };
+            ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+        }
+        else if(sentList.Count>10)
+        {
+            var detailsTxt = $"Sent a bulk requests for {sentList.Count} items ";
+
+            var notifyMessage = new NotificationMessage()
+            {
+                Summary = "Bulk Request Sent",
                 Detail = detailsTxt,
                 Severity = NotificationSeverity.Info,
                 Duration = 4000
