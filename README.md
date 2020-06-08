@@ -1027,6 +1027,13 @@ The following screen is a sample usage of the application.
 
 ![RDPPricingScreenShot](images/RDPPricingRate.gif)
 
+__Note__
+
+There is some situation that another app is using port 5000 and 5001 on the same machine, so Kestrel unable to start. You can change the default port in file launchSettings.json, which locates in folder Properties. And change port in the following line to a new one.
+
+```json
+ "applicationUrl": "https://localhost:5001;http://localhost:5000"
+```
 
 ## Summary
 
