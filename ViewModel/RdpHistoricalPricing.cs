@@ -40,14 +40,14 @@ namespace RdpRealTimePricing.ViewModel
                 if (data_table.Rows.Count <= 0) return false;
                 foreach (DataRow row in data_table.Rows)
                 {
-                    var midprice = new MidpriceItem();
-                    var tradeprice = new TrdprcItem();
-                    var trnovrunsData = new TrnovrunsData();
+                    var midPrice = new MidpriceItem();
+                    var tradePrice = new TrdprcItem();
+                    var trnOvrunsData = new TrnovrunsData();
                     if (data_table.Columns.Contains("Date"))
                     {
-                        midprice.Date = (DateTime) row["Date"];
-                        tradeprice.Date = (DateTime) row["Date"];
-                        trnovrunsData.Date = (DateTime) row["Date"];
+                        midPrice.Date = (DateTime) row["Date"];
+                        tradePrice.Date = (DateTime) row["Date"];
+                        trnOvrunsData.Date = (DateTime) row["Date"];
                     }
 
 
@@ -55,8 +55,8 @@ namespace RdpRealTimePricing.ViewModel
                     {
                         if (!Convert.IsDBNull(row["MID_PRICE"]))
                         {
-                            midprice.MID_PRICE = (double) row["MID_PRICE"];
-                            midpriceItems.Add(midprice);
+                            midPrice.MID_PRICE = (double) row["MID_PRICE"];
+                            midpriceItems.Add(midPrice);
                         }
                     }
 
@@ -64,16 +64,16 @@ namespace RdpRealTimePricing.ViewModel
                     {
                         if (!Convert.IsDBNull(row["TRNOVR_UNS"]))
                         {
-                            trnovrunsData.TRNOVR_UNS = (double) row["TRNOVR_UNS"];
-                            trnovrunsDataItems.Add(trnovrunsData);
+                            trnOvrunsData.TRNOVR_UNS = (double) row["TRNOVR_UNS"];
+                            trnovrunsDataItems.Add(trnOvrunsData);
                         }
                     }
 
 
                     if (!data_table.Columns.Contains("TRDPRC_1")) continue;
                     if (Convert.IsDBNull(row["TRDPRC_1"])) continue;
-                    tradeprice.TRDPRC_1 = (double) row["TRDPRC_1"];
-                    tradepriceItems.Add(tradeprice);
+                    tradePrice.TRDPRC_1 = (double) row["TRDPRC_1"];
+                    tradepriceItems.Add(tradePrice);
                 }
 
                 ;
