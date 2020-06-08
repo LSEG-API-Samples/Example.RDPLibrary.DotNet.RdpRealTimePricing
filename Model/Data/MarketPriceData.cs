@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 
 namespace RdpRealTimePricing.Model.Data
 {
-    public class MarketPriceData
+    public class MarketPriceData: IMarketData
     {
         public enum PriceChangeEnum
         {
@@ -14,6 +16,7 @@ namespace RdpRealTimePricing.Model.Data
         public bool IsSelected{ get; set; }
         public string RicName { get; set; }
         public int? StreamId { get; set; }
+
         [Newtonsoft.Json.JsonProperty("DSPLY_NAME", DefaultValueHandling = DefaultValueHandling.Ignore,
             NullValueHandling = Newtonsoft.Json.NullValueHandling.Include)]
         public string DSPLY_NAME { get; set; }
@@ -79,5 +82,8 @@ namespace RdpRealTimePricing.Model.Data
         [Newtonsoft.Json.JsonProperty("CURRENCY", DefaultValueHandling = DefaultValueHandling.Ignore,
             NullValueHandling = Newtonsoft.Json.NullValueHandling.Include)]
         public string CURRENCY { get; set; }
+
+        [Newtonsoft.Json.JsonExtensionData]
+        public IDictionary<string, JToken> _Attribute { get; set; }
     }
 }

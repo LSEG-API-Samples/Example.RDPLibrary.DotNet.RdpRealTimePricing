@@ -84,108 +84,119 @@ namespace RdpRealTimePricing.ViewModel
             }));
         }
 
-        public static MarketPriceData FieldListToMarketPriceData(Dictionary<string, dynamic> data)
+        public IMarketData FieldListToMarketPriceData<T>(Dictionary<string, dynamic> data)
         {
-            var fxrateData = data.ToObject<MarketPriceData>();
-            fxrateData.BID_Status = MarketPriceData.PriceChangeEnum.NoChange;
-
-            if (fxrateData.OPEN_BID == null)
-            {
-                if (fxrateData.OPEN_PRC != null)
-                {
-                    if (fxrateData.BID > fxrateData.OPEN_PRC)
-                        fxrateData.BID_Status = MarketPriceData.PriceChangeEnum.Up;
-                    else if (fxrateData.BID < fxrateData.OPEN_PRC)
-                        fxrateData.BID_Status = MarketPriceData.PriceChangeEnum.Down;
-                }
-            }
-            else
-            {
-                if (fxrateData.BID > fxrateData.OPEN_BID)
-                    fxrateData.BID_Status = MarketPriceData.PriceChangeEnum.Up;
-                else if (fxrateData.BID < fxrateData.OPEN_BID)
-                    fxrateData.BID_Status = MarketPriceData.PriceChangeEnum.Down;
-            }
-
-            fxrateData.ASK_Status = MarketPriceData.PriceChangeEnum.NoChange;
-            if (fxrateData.OPEN_ASK == null)
-            {
-                if (fxrateData.OPEN_PRC != null)
-                {
-                    if (fxrateData.ASK > fxrateData.OPEN_PRC)
-                        fxrateData.ASK_Status = MarketPriceData.PriceChangeEnum.Up;
-                    else if (fxrateData.ASK < fxrateData.OPEN_PRC)
-                        fxrateData.ASK_Status = MarketPriceData.PriceChangeEnum.Down;
-                }
-            }
-            else
-            {
-                if (fxrateData.ASK > fxrateData.OPEN_BID)
-                    fxrateData.ASK_Status = MarketPriceData.PriceChangeEnum.Up;
-                else if (fxrateData.ASK < fxrateData.OPEN_ASK)
-                    fxrateData.ASK_Status = MarketPriceData.PriceChangeEnum.Down;
-            }
-
-            fxrateData.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.NoChange;
-            if (fxrateData.TRDPRC_1 > fxrateData.OPEN_PRC)
-                fxrateData.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Up;
-            else if (fxrateData.TRDPRC_1 < fxrateData.OPEN_PRC)
-                fxrateData.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Down;
-            return fxrateData;
+            return typeof(T) != typeof(MarketPriceData) ? null : GenerateMarketPriceData(data);
         }
 
-        public static void UpdateFieldListWithFieldUpdate(Dictionary<string,dynamic> source,ref MarketPriceData destination)
+        private MarketPriceData GenerateMarketPriceData(Dictionary<string, dynamic> data)
         {
-            if(source.ContainsKey("DSPLY_NAME"))
-               destination.DSPLY_NAME = (string)source["DSPLY_NAME"];
+            var fxRateData = data.ToObject<MarketPriceData>();
+            fxRateData.BID_Status = MarketPriceData.PriceChangeEnum.NoChange;
+
+            if (fxRateData.OPEN_BID == null)
+            {
+                if (fxRateData.OPEN_PRC != null)
+                {
+                    if (fxRateData.BID > fxRateData.OPEN_PRC)
+                        fxRateData.BID_Status = MarketPriceData.PriceChangeEnum.Up;
+                    else if (fxRateData.BID < fxRateData.OPEN_PRC)
+                        fxRateData.BID_Status = MarketPriceData.PriceChangeEnum.Down;
+                }
+            }
+            else
+            {
+                if (fxRateData.BID > fxRateData.OPEN_BID)
+                    fxRateData.BID_Status = MarketPriceData.PriceChangeEnum.Up;
+                else if (fxRateData.BID < fxRateData.OPEN_BID)
+                    fxRateData.BID_Status = MarketPriceData.PriceChangeEnum.Down;
+            }
+
+            fxRateData.ASK_Status = MarketPriceData.PriceChangeEnum.NoChange;
+            if (fxRateData.OPEN_ASK == null)
+            {
+                if (fxRateData.OPEN_PRC != null)
+                {
+                    if (fxRateData.ASK > fxRateData.OPEN_PRC)
+                        fxRateData.ASK_Status = MarketPriceData.PriceChangeEnum.Up;
+                    else if (fxRateData.ASK < fxRateData.OPEN_PRC)
+                        fxRateData.ASK_Status = MarketPriceData.PriceChangeEnum.Down;
+                }
+            }
+            else
+            {
+                if (fxRateData.ASK > fxRateData.OPEN_BID)
+                    fxRateData.ASK_Status = MarketPriceData.PriceChangeEnum.Up;
+                else if (fxRateData.ASK < fxRateData.OPEN_ASK)
+                    fxRateData.ASK_Status = MarketPriceData.PriceChangeEnum.Down;
+            }
+
+            fxRateData.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.NoChange;
+            if (fxRateData.TRDPRC_1 > fxRateData.OPEN_PRC)
+                fxRateData.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Up;
+            else if (fxRateData.TRDPRC_1 < fxRateData.OPEN_PRC)
+                fxRateData.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Down;
+            return fxRateData;
+        }
+
+        public static IMarketData UpdateFieldListWithFieldUpdate<T>(Dictionary<string,dynamic> source,IMarketData destination)
+        {
+       
+            if (typeof(T) != typeof(MarketPriceData)) throw new InvalidCastException($"Unable to update field list.{typeof(T)} is not supported");
+
+            var tempObj = (MarketPriceData)destination;
+            if (source.ContainsKey("DSPLY_NAME"))
+                tempObj.DSPLY_NAME = (string)source["DSPLY_NAME"];
 
             if (source.ContainsKey("BID"))
             {
-                if (source["BID"] > destination.BID)
-                    destination.BID_Status = MarketPriceData.PriceChangeEnum.Up;
-                else if (source["BID"] < destination.BID)
-                    destination.BID_Status = MarketPriceData.PriceChangeEnum.Down;
+                if (source["BID"] > tempObj.BID)
+                    tempObj.BID_Status = MarketPriceData.PriceChangeEnum.Up;
+                else if (source["BID"] < tempObj.BID)
+                    tempObj.BID_Status = MarketPriceData.PriceChangeEnum.Down;
 
-                destination.BID = source["BID"];
+                tempObj.BID = source["BID"];
             }
 
             if (source.ContainsKey("ASK"))
             {
-                if (source["ASK"] > destination.ASK)
-                    destination.ASK_Status = MarketPriceData.PriceChangeEnum.Up;
-                else if (source["ASK"] < destination.ASK)
-                    destination.ASK_Status = MarketPriceData.PriceChangeEnum.Down;
+                if (source["ASK"] > tempObj.ASK)
+                    tempObj.ASK_Status = MarketPriceData.PriceChangeEnum.Up;
+                else if (source["ASK"] < tempObj.ASK)
+                    tempObj.ASK_Status = MarketPriceData.PriceChangeEnum.Down;
 
-                destination.ASK = source["ASK"];
+                tempObj.ASK = source["ASK"];
             }
 
             if (source.ContainsKey("HIGH_1"))
-                destination.HIGH_1 = source["HIGH_1"];
+                tempObj.HIGH_1 = source["HIGH_1"];
 
             if (source.ContainsKey("TRDPRC_1"))
             {
-                if (source["TRDPRC_1"] > destination.TRDPRC_1)
-                    destination.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Up;
-                else if (source["TRDPRC_1"] < destination.TRDPRC_1)
-                    destination.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Down;
-                        
-                destination.TRDPRC_1 = source["TRDPRC_1"];
+                if (source["TRDPRC_1"] > tempObj.TRDPRC_1)
+                    tempObj.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Up;
+                else if (source["TRDPRC_1"] < tempObj.TRDPRC_1)
+                    tempObj.TRDPRC_1_Status = MarketPriceData.PriceChangeEnum.Down;
+
+                tempObj.TRDPRC_1 = source["TRDPRC_1"];
             }
 
             if (source.ContainsKey("TRDVOL_1"))
-                destination.TRDVOL_1 = source["TRDVOL_1"];
+                tempObj.TRDVOL_1 = source["TRDVOL_1"];
 
             if (source.ContainsKey("PCTCHNG"))
-                destination.PCTCHNG = source["PCTCHNG"];
+                tempObj.PCTCHNG = source["PCTCHNG"];
 
             if (source.ContainsKey("OPEN_PRC"))
-                destination.OPEN_PRC = source["OPEN_PRC"];
+                tempObj.OPEN_PRC = source["OPEN_PRC"];
 
             if (source.ContainsKey("HST_CLOSE"))
-                destination.HST_CLOSE = source["HST_CLOSE"];
+                tempObj.HST_CLOSE = source["HST_CLOSE"];
 
             if (source.ContainsKey("CURRENCY"))
-                destination.CURRENCY = source["CURRENCY"];
+                tempObj.CURRENCY = source["CURRENCY"];
+
+            return (MarketPriceData)tempObj;
         }
         #region ItemEventProcessing
         private void processOnRefresh(IStream s, JObject msg)

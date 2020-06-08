@@ -76,11 +76,11 @@
                                     <span style='color: @(GetFontColor(data.BID_Status))'>@ObjectExtensions.FormatCurrency(data.BID, data.CURRENCY)</span>
                                     @if (data.BID_Status == MarketPriceData.PriceChangeEnum.Up)
                                             {
-                                    <span style='color: forestgreen'>&#8679;</span>
+                                <span style='color: green'>&#9650;</span>
                                             }
                                             else if (data.BID_Status == MarketPriceData.PriceChangeEnum.Down)
                                             {
-                                    <span style='color: darkred'>&#8681;</span>
+                                <span style='color: red'>&#9660;</span>
                                             }
                                 </Template>
                             </RadzenGridColumn>
@@ -98,11 +98,11 @@
                                     <span style='color: @(GetFontColor(data.ASK_Status))'>@ObjectExtensions.FormatCurrency(data.ASK, data.CURRENCY)</span>
                                     @if (data.ASK_Status == MarketPriceData.PriceChangeEnum.Up)
                                             {
-                                    <span style='color: forestgreen'>&#8679;</span>
+                                <span style='color: green'>&#9650;</span>
                                             }
                                             else if (data.ASK_Status == MarketPriceData.PriceChangeEnum.Down)
                                             {
-                                    <span style='color: darkred'>&#8681;</span>
+                                <span style='color: red'>&#9660;</span>
                                             }
                                 </Template>
                             </RadzenGridColumn>
@@ -120,11 +120,11 @@
                                     <span style='color: @(GetFontColor(data.TRDPRC_1_Status))'>@ObjectExtensions.FormatCurrency(data.TRDPRC_1, data.CURRENCY)</span>
                                     @if (data.TRDPRC_1_Status == MarketPriceData.PriceChangeEnum.Up)
                                             {
-                                    <span style='color: forestgreen'>&#8679;</span>
+                                <span style='color: green'>&#9650;</span>
                                             }
                                             else if (data.TRDPRC_1_Status == MarketPriceData.PriceChangeEnum.Down)
                                             {
-                                    <span style='color: darkred'>&#8681;</span>
+                                <span style='color: red'>&#9660;</span>
                                             }
                                 </Template>
                             </RadzenGridColumn>
@@ -349,8 +349,9 @@
         Task.Run(() =>
         {
             if (!AppData.UseRDP) return;
-            foreach (var dataItem in AppData.DataCache.Values)
+            foreach (var marketData in AppData.DataCache.Values)
             {
+                var dataItem = (MarketPriceData) marketData;
                 dataItem.IsSelected = dataItem.RicName == data.RicName;
             }
 
@@ -360,7 +361,7 @@
 
     async Task GenerateChartAndGetCompanyInfoAsync(string item)
     {
-        
+
         var rdpCompany = new RdpCompanyInfo();
         var historical = new RdpHistoricalPricing();
 
@@ -543,7 +544,7 @@
                             var itemName = refreshMessage.Key != null ? refreshMessage.Key.Name.FirstOrDefault() : string.Empty;
                             if (refreshMessage.Fields != null)
                             {
-                                var fxrateData = RdpMarketPriceService.FieldListToMarketPriceData(refreshMessage.Fields);
+                                var fxrateData = (MarketPriceData)RdpMarketPriceService.FieldListToMarketPriceData<MarketPriceData>(refreshMessage.Fields);
                                 fxrateData.StreamId = refreshMessage.ID;
                                 fxrateData.RicName = itemName;
                                 AppData.DataCache.AddOrUpdate(itemName, fxrateData, (oldkey, oldvalue) => fxrateData);
@@ -569,8 +570,8 @@
                             {
                                 if (AppData.DataCache.TryGetValue(itemName, out var tempDict))
                                 {
-                                    RdpMarketPriceService.UpdateFieldListWithFieldUpdate(updateMessage.Fields, ref tempDict);
-                                    AppData.DataCache.AddOrUpdate(itemName, tempDict, (oldkey, oldvalue) => tempDict);
+                                    var updatedData=RdpMarketPriceService.UpdateFieldListWithFieldUpdate<MarketPriceData>(updateMessage.Fields, tempDict);
+                                    AppData.DataCache.AddOrUpdate(itemName, (MarketPriceData)updatedData, (oldkey, oldvalue) => tempDict);
                                 }
                                 this?.InvokeAsync(StateHasChanged);
                             }

@@ -1,8 +1,8 @@
 # Displays stock price in real-time on the web using ASP.NET Core Blazor and RDP.NET
 
-It's been a while we receive a question from .NET web developer about a simple and easy-to-use library that can help develop an ASP.NET web application to streaming a market price data from Elektron through the local deployed TREP or Elektron Real-Time(ERT) in Cloud. Elektron SDK and TREP APIs such as RFA.NET does not designed to use with such kind of .NET web application. Fortunately, the ERT in Cloud and TREP version 3.2.x and later version provide a Websocket connection that supports a market price streaming and also supports another domain model data available on Elektron for Real-Time as well. Software developers can use any WebSocket client library to establish a connection and communicate with the WebSocket server directly. And RDP users can leverage functionality from other endpoints to get additional data such as Historical Summary and Company details.
+It's been a while we receive a question from a developer in .NET Ecosystem regarding a cross-platform solution to help develop an [ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/?view=aspnetcore-3.1) web application and service. The developer wants to integrate a real-time stream of market price data from local deployed TREP or [Refinitiv Data Platform(RDP)](https://developers.refinitiv.com/refinitiv-data-platform/)/Elektron Real-Time(ERT) in Cloud streaming services to their web application for viewing or stock trading purpose. Because currently, the library we have so far that are Elektron SDK, and RFA.NET does not have a .NET standard library, which can be used with such kind of .NET Core web application. Fortunately, the ERT in Cloud and TREP (version 3.2.x and later version) provide a WebSocket connection that supports a market price streaming and also supports another domain model data available on Elektron for Real-Time as well. Software developers can use any WebSocket client library to establish a connection and communicate with the WebSocket server directly. Also, the user can leverage functionality from [Refinitiv Data Platform(RDP)](https://developers.refinitiv.com/refinitiv-data-platform/refinitiv-data-platform-apis) HTTP endpoints to get additional data such as Historical Summary and Company details.
 
-The Refinitiv Data Platform Libraries for .NET (RDP.NET) is a new community-based library that is designed as ease-of-use interfaces, and it can help eliminate the development process complexity. The library implemented a Websocket connection inside therefore it is supporting retrieving the market price streaming from the ERT in cloud. And it also provides additional functionality to get data from other RDP endpoints. The below picture depicts the architecture of RDP Libraries.
+The Refinitiv Data Platform Libraries for .NET (RDP.NET) is one of the solutions for this kind of .NET Core project, and it's a new community-based library that is designed as ease-of-use interfaces. It can help eliminate the development process complexity. The library implemented a WebSocket connection inside; therefore, it is supporting retrieving the market price streaming from the ERT in the cloud. And it also provides additional functionality to get data from other RDP endpoints. The below picture depicts the architecture of RDP Libraries.
 
 ![RDP Architecuture](images/RDP.png)
 
@@ -12,7 +12,7 @@ And the following picture is an architecture and layers from the Libraries.
 
 The RDP.NET are ease-of-use APIs defining a set of uniform interfaces providing the developer access to the Refinitiv Data Platform and Elektron. The APIs are designed to provide consistent access through multiple access channels; developers can choose to access content from the desktop, through their deployed streaming services or directly to the cloud. The interfaces encompass a set of unified Web APIs providing access to both streaming (over WebSockets) and non-streaming (HTTP REST) data available within the platform.
 
-This article will provide an example web application which creates by using [ASP.NET Core Blazor Framework](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor). The sample web application is a server-side Blazor web application that can be used with C# to provide interactive web UI.  In this project, we will use the RDP.NET library to login to RDP or TREP server and then retrieving market price data from local deployed TREP or ERT in Cloud. The sample application will use the functionality of the Core/Delivery Layer, to request streaming data, especially real-time prices. Moreover, the application also uses RDP Historical Pricing API to request Inter day Summaries for end of day daily data. It also uses the Company Overview Service API to get the company information of the RIC and display it along with the Chart of the Inter day data.
+This article will provide an example web application which creates by using [ASP.NET Core Blazor Framework](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor). The sample web application is a server-side Blazor web application that can be used with C# to provide interactive web UI.  In this project, we will use the RDP.NET library to login to RDP or TREP server and then retrieving market price data from local deployed TREP or ERT in Cloud. The sample application will use the functionality of the Core/Delivery Layer, to request streaming data, especially real-time prices. Moreover, the app also uses RDP Historical Pricing API to request Inter day Summaries for end of day daily data. It also uses the RDP Company Overview Service API to get the company information of the RIC and display it along with the Chart of the Inter day data.
 
 ![sample design](images/mainpageshows.gif)
 
@@ -232,7 +232,7 @@ namespace RdpRealTimePricing.ViewModel
 
 ```
 
-Sample of MarketPriceData model class. You need to add JsonProperty tag to the property if you wish to add a new property to the model.
+Sample of MarketPriceData model class. You need to add JsonProperty tag to the property if you wish to add a new property to the model. The name of JSONProperty must be the same field name as field list from the Elektron Webosocket Market Price JSON response message.
 
 ```c#
 namespace RdpRealTimePricing.Model.Data
@@ -279,7 +279,7 @@ if (AppData.DataCache.TryAdd(itemname, data))
 
 ### __Create Blazor Login Page__
 
-Once the web application is started, the user has to input either a valid RDP credential or a Websocket Server with a valid DACS username for a TREP server. We need to create a Blazor Login page using the Radzen UI component to get the RDP or TREP login details from the user and pass it to RdpSession via its properties before calling InitWebSocketConnectionAsync.
+Once the web application is started, the user has to input either a valid RDP credential or a WebSocket Server with a valid DACS username for a TREP server. We need to create a Blazor Login page using the Radzen UI component to get the RDP or TREP login details from the user and pass it to RdpSession via its properties before calling InitWebSocketConnectionAsync.
 
 ASP.NET Core supports the [dependency injection (DI)](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-3.1) software design pattern, so first steps we need to add RdpSession, RdpMarketPriceService, and AppData to service scoped in Startup.cs. The AppData object holds the cache for the market price data with additional user state and status.
 
@@ -418,7 +418,7 @@ Sample UI generated for TREP Login
 
 ![TREPLogin](images/RadZenTrepLogin.png)
 
-Once the user clicks the Login button, it will call a method defined under @code block. Below is a callback method OnSubmitAsync that login to the server by using method InitWebSOcketConnectionAsync. There are callback messages returned to the OnSession callback function and we can define the action based on the Session EventCode. For instance, if Login is a success, the application will navigate the user to page named "marketpricerate" which is the main page to shows UI for getting input RIC and display stock prices.
+Once the user clicks the Login button, it will call a method defined under @code block. Below is a callback method OnSubmitAsync that login to the server by using method InitWebSocketConnectionAsync. There are callback messages returned to the OnSession callback function and we can define the action based on the Session EventCode. For instance, if Login is a success, the application will navigate the user to page named "marketpricerate" which is the main page to shows UI for getting input RIC and display stock prices.
 
 ```c#
 Task OnSubmitAsync()
@@ -851,7 +851,7 @@ To binds data from DataTable to a Chart, the application will create an object t
 And here is the list of an object to hold the actual data for the Chart.
 
 ```C#
-     List<MidpriceItem> _midPriceItems = new List<MidpriceItem>();
+    List<MidpriceItem> _midPriceItems = new List<MidpriceItem>();
     List<TrdprcItem> _tradePriceItems = new List<TrdprcItem>();
     List<TrnovrunsData> _trnOvrunsDataItems = new List<TrnovrunsData>();
 
@@ -885,7 +885,7 @@ There is a service named overview-service that provides an endpoint to query the
 var baseEndpoint="https://api.refinitiv.com/user-framework/mobile/overview-service/v1/"
 ```
 
-We will create a model to convert the company name and summary details from the JSON message and then binds it to the Radzen UI component. There are two methods we created in the application __GetCompanyNameAsync__ and __GetCompanyBusinessSummaryAsync__. The first one used to get Company Name and later one use to get company summary details.
+We will create a model to convert the company name and summary details from the JSON message and then binds it to the Radzen UI component. There are two methods we created in the application __GetCompanyNameAsync__ and __GetCompanyBusinessSummaryAsync__. The first one used to get Company Name and later one use to get company summary details. Both methods use Endpoint class, which is a class under the RDP.NET Deliver layer to send HTTP requests and get HTTP response back
 
 ```c#
 public async Task<CompanyName> GetCompanyNameAsync(Refinitiv.DataPlatform.Core.ISession session, string ricname)
@@ -982,7 +982,7 @@ __Build and Run the application using Visual Studio 2019__
 
 * Go to Debug and click __Start Debugging__ or __Start Without Debugging__.
  
-Visual Studio will start the IIS Express process and displays the main page for the web application. Then you can click Login to input RDP Login or use the local TREP Websocket server.
+Visual Studio will start the IIS Express process and displays the main page for the web application. Then you can click Login to input RDP Login or use the local TREP WebSocket server.
 
 __Build and Run the application using .NET Core SDK__
 
@@ -1023,14 +1023,14 @@ You can click Login to use the web application. And it will route to the main ap
 
 ![mainpage description](images/mainpagedescription.png)
 
-Sample Usages
+The following screen is a sample usage of the application. 
 
 ![RDPPricingScreenShot](images/RDPPricingRate.gif)
 
 
 ## Summary
 
-This article demonstrates how to use [RDP.NET](https://developers.refinitiv.com/refinitiv-data-platform/refinitiv-data-platform-libraries) with the [ASP.NET Core Blazor framework](https://docs.microsoft.com/en-us/aspnet/core/blazor/get-started?view=aspnetcore-3.1&tabs=visual-studio) to develop a single page application to login to the Refinitiv Data Platform(RDP) and get Streaming Stock Price. It uses the [Radzen Blazor component](https://blazor.radzen.com/get-started) to build web UI. The application can bind the data returned from RDP.NET libraries to RadzenGrid to display price updates. This is an alternate solution for .NET web developers who need to integrate real-time price data in their web application for stock trading or price monitoring purpose. The example also demonstrates how to get Historical Summary data from the RDP HTTP endpoint and plot Chart on the web. It can show a piece of company information based on RIC or symbol name. Users can run the ASP.NET Core Web application on a local machine, which is a Windows, Linux, and macOS or deploy it on Docker or Cloud like Azure and AWS.
+This article demonstrates how to use [RDP.NET](https://developers.refinitiv.com/refinitiv-data-platform/refinitiv-data-platform-libraries) with the [ASP.NET Core Blazor framework](https://docs.microsoft.com/en-us/aspnet/core/blazor/get-started?view=aspnetcore-3.1&tabs=visual-studio) to develop a single page application to login to the Refinitiv Data Platform(RDP) and get Streaming Stock Price. It uses the [Radzen Blazor component](https://blazor.radzen.com/get-started) to build web UI. The application can bind the data returned from RDP.NET libraries to RadzenGrid to display price updates. It is an alternate solution for .NET web developers who need to integrate real-time price data in their web application for stock trading or price monitoring purpose. The example also demonstrates how to get Historical Summary data from the RDP HTTP endpoint and plot Chart on the web. It can show a piece of company information based on RIC or symbol name. Users can run the ASP.NET Core Web application on a local machine, which is a Windows, Linux, and macOS or deploy it on Docker or Cloud like Azure and AWS.
 
 ## References
 
@@ -1038,7 +1038,7 @@ This article demonstrates how to use [RDP.NET](https://developers.refinitiv.com/
 * [The Introduction to RDP Libraries document](https://developers.refinitiv.com/refinitiv-data-platform/refinitiv-data-platform-libraries/docs?content=62446&type=documentation_item)
 * [Refinitiv DataPlatform for .NET Nuget](https://www.nuget.org/packages/Refinitiv.DataPlatform/)
 * [Refinitiv DataPlatform Content Nuget](https://www.nuget.org/packages/Refinitiv.DataPlatform.Content/)
-* [Elektron Websocket](https://developers.refinitiv.com/elektron/websocket-api/quick-start)
+* [Elektron WebSocket](https://developers.refinitiv.com/elektron/websocket-api/quick-start)
 * [Refinitiv API Docs](https://apidocs.refinitiv.com/Apps/ApiDocs)
 * [Radzen Blazor Components](https://blazor.radzen.com/get-started)
 * [Get started with ASP.NET Core Blazor](https://docs.microsoft.com/en-us/aspnet/core/blazor/get-started?view=aspnetcore-3.1&tabs=visual-studio)

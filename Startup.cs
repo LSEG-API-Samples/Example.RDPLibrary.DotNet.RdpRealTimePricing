@@ -31,7 +31,7 @@ namespace RdpRealTimePricing
             services.AddScoped<DialogService>();
             services.AddScoped<NotificationService>();
             services.AddScoped<AppData>();
-            services.AddSingleton<CircuitHandler, TrackingCircuitHandler>();
+         
 
         }
 
