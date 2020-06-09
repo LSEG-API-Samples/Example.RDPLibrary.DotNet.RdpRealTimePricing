@@ -20,7 +20,7 @@ namespace RdpRealTimePricing.ViewModel
     public class RdpMarketPriceService
     {
         private readonly ConcurrentDictionary<string, IStream> _streamCache;
-        public void OpenItem(string item, Refinitiv.DataPlatform.Core.ISession RdpSession,Type modelType)
+        public async Task OpenItemAsync(string item, Refinitiv.DataPlatform.Core.ISession RdpSession,Type modelType)
         {
            var fieldnameList = modelType.GetProperties()
                     .SelectMany(p => p.GetCustomAttributes(typeof(JsonPropertyAttribute))
@@ -28,39 +28,40 @@ namespace RdpRealTimePricing.ViewModel
                     .Select(prop => prop.PropertyName)
                     .ToArray();
 
-           if (RdpSession != null)
-           {
-               ItemStream.Params itemParams;
-               if (!fieldnameList.Any())
-               {
-                   // First, prepare our item stream details including the fields of interest and where to capture events...
-                   itemParams = new ItemStream.Params().Session(RdpSession)
-                       .OnRefresh(processOnRefresh)
-                       .OnUpdate(processOnUpdate)
-                       .OnStatus(processOnStatus);
-               }
-               else
-               {
-                   // First, prepare our item stream details including the fields of interest and where to capture events...
-                   itemParams = new ItemStream.Params().Session(RdpSession)
-                       .WithFields(fieldnameList)
-                       .OnRefresh(processOnRefresh)
-                       .OnUpdate(processOnUpdate)
-                       .OnStatus(processOnStatus);
-               }
+            if (RdpSession != null)
+                await Task.Run(() =>
+                {
+                    ItemStream.Params itemParams;
+                    if (!fieldnameList.Any())
+                    {
+                        // First, prepare our item stream details including the fields of interest and where to capture events...
+                        itemParams = new ItemStream.Params().Session(RdpSession)
+                            .OnRefresh(processOnRefresh)
+                            .OnUpdate(processOnUpdate)
+                            .OnStatus(processOnStatus);
+                    }
+                    else
+                    {
+                        // First, prepare our item stream details including the fields of interest and where to capture events...
+                        itemParams = new ItemStream.Params().Session(RdpSession)
+                            .WithFields(fieldnameList)
+                            .OnRefresh(processOnRefresh)
+                            .OnUpdate(processOnUpdate)
+                            .OnStatus(processOnStatus);
+                    }
 
-               var stream = DeliveryFactory.CreateStream(itemParams.Name(item));
-               if (_streamCache.TryAdd(item, stream))
-               {
-                   stream.Open();
-               }
-               else
-               {
-                   var msg = $"Unable to open new stream for item {item}.";
-                   RaiseOnError(msg);
-               }
-           }
-           else
+                    var stream = DeliveryFactory.CreateStream(itemParams.Name(item));
+                    if (_streamCache.TryAdd(item, stream))
+                    {
+                        stream.OpenAsync();
+                    }
+                    else
+                    {
+                        var msg = $"Unable to open new stream for item {item}.";
+                        RaiseOnError(msg);
+                    }
+                });
+            else
                 throw new ArgumentNullException("RDP Session is null.");
         }
 
@@ -68,19 +69,27 @@ namespace RdpRealTimePricing.ViewModel
         {
             _streamCache = new ConcurrentDictionary<string, IStream>();
         }
-        public void CloseItemStream(string item)
+        public Task CloseItemStreamAsync(string item)
         {
-            if (!_streamCache.TryGetValue(item, out var stream)) return;
-            stream.Close();
-            _streamCache.TryRemove(item, out var removedItem);
+            return Task.WhenAll(Task.Run(() =>
+            {
+                if (_streamCache.TryGetValue(item,out var stream))
+                {
+                    stream.CloseAsync();
+                    if (_streamCache.TryRemove(item, out var removedItem))
+                    {
+                        removedItem = null;
+                    }
+                }
+            }));
         }
 
-        public async Task<MarketPriceData> FieldListToMarketPriceDataAsync<T>(Dictionary<string, dynamic> data)
+        public IMarketData FieldListToMarketPriceData<T>(Dictionary<string, dynamic> data)
         {
-            return typeof(T) != typeof(MarketPriceData) ? null : await Task.Run(()=>GenerateMarketPriceData(data)).ConfigureAwait(false);
+            return typeof(T) != typeof(MarketPriceData) ? null : GenerateMarketPriceData(data);
         }
 
-        private static MarketPriceData GenerateMarketPriceData(Dictionary<string, dynamic> data)
+        private MarketPriceData GenerateMarketPriceData(Dictionary<string, dynamic> data)
         {
             var fxRateData = data.ToObject<MarketPriceData>();
             fxRateData.BID_Status = MarketPriceData.PriceChangeEnum.NoChange;
@@ -133,7 +142,7 @@ namespace RdpRealTimePricing.ViewModel
         public static IMarketData UpdateFieldListWithFieldUpdate<T>(Dictionary<string,dynamic> source,IMarketData destination)
         {
        
-            if (typeof(T) != typeof(MarketPriceData)) throw new InvalidCastException($"Unable to update field list.{typeof(T)} is not supported");
+            if (typeof(T) != typeof(MarketPriceData)) return destination;
 
             var tempObj = (MarketPriceData)destination;
             if (source.ContainsKey("DSPLY_NAME"))
@@ -214,32 +223,27 @@ namespace RdpRealTimePricing.ViewModel
         // Event Handler
         #region EventHandler
         public event EventHandler<OnErrorEventArgs> OnErrorEvents;
-        public event EventHandler<OnResponseMessageEventArgs> OnResponeMessageEvents;
-
-        protected void RaiseOnMessage(MessageTypeEnum msgType, IMessage message)
-        {
-            var messageEvent = new OnResponseMessageEventArgs() {MessageType = msgType, RespMessage = message};
-            OnRespMessage(messageEvent);
-        }
-
-        protected virtual void OnRespMessage(OnResponseMessageEventArgs e)
-        {
-            var handler = OnResponeMessageEvents;
-            handler?.Invoke(this, e);
-        }
-
-        protected void RaiseOnError(string message)
-        {
-            var errorEvent = new OnErrorEventArgs() {Message = message};
-            OnError(errorEvent);
-        }
-
-        protected virtual void OnError(OnErrorEventArgs e)
-        {
-            var handler = OnErrorEvents;
-            handler?.Invoke(this, e);
-        }
-
+       public event EventHandler<OnResponseMessageEventArgs> OnResponeMessageEvents;
+       protected void RaiseOnMessage(MessageTypeEnum msgtype, IMessage message)
+       {
+           var messageEvent = new OnResponseMessageEventArgs() { MessageType = msgtype, RespMessage = message };
+           OnRespMessage(messageEvent);
+       }
+       protected virtual void OnRespMessage(OnResponseMessageEventArgs e)
+       {
+           var handler = OnResponeMessageEvents;
+           handler?.Invoke(this, e);
+       }
+       protected void RaiseOnError(string message)
+       {
+           var errorEvent = new OnErrorEventArgs() { Message = message };
+           OnError(errorEvent);
+       }
+       protected virtual void OnError(OnErrorEventArgs e)
+       {
+           var handler = OnErrorEvents;
+           handler?.Invoke(this, e);
+       }
         #endregion EventHandler
     }
 }

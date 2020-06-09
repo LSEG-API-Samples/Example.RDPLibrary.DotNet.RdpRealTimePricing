@@ -51,9 +51,10 @@ namespace RdpRealTimePricing.ViewModel
             
             _session = null;
         }
-        public void InitWebSocketConnection(bool useRdp)
+        public Task InitWebSocketConnectionAsync(bool useRdp)
         {
-            
+            return Task.Run(() =>
+            {
                 Log.Level = NLog.LogLevel.Trace;
 
                 if (!useRdp)
@@ -77,8 +78,9 @@ namespace RdpRealTimePricing.ViewModel
                         .OnState(processOnState)
                         .OnEvent(processOnEvent));
                 }
+                _session.OpenAsync().ConfigureAwait(false);
 
-                _session.Open();
+            });
         }
         private void processOnEvent(ISession session, Session.EventCode code, JObject message)
         {

@@ -163,15 +163,11 @@
 
             Task OnSubmitAsync()
             {
-                return Task.Run(() =>
-                {
+                LoginReadOnly = true;
+                ProgressVisible = true;
+                this?.InvokeAsync(StateHasChanged);
+                return RdpSession.InitWebSocketConnectionAsync(AppData.UseRDP);
 
-                    LoginReadOnly = true;
-                    ProgressVisible = true;
-                    this?.InvokeAsync(StateHasChanged);
-                    RdpSession.InitWebSocketConnection(AppData.UseRDP);
-
-                });
             }
 
             void Change(bool? value, string name)
@@ -280,7 +276,6 @@
 
 
             }
-
 
 
             async Task ShowSessionDialogAsync() => await DialogService.OpenAsync(@DialogName, ds =>

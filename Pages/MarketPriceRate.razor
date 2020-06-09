@@ -330,14 +330,14 @@
     async void ShowChart(MarketPriceData item)
     {
         GraphVisible = false;
-        var notifyMessage = new NotificationMessage()
+        var notifymessage = new NotificationMessage()
         {
             Summary = $"Gererating Chart",
             Detail = $"Please wait, application are generating inter-day summary chart for {item.RicName}",
             Severity = NotificationSeverity.Info,
             Duration = 4000
         };
-        await ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+        await ShowItemNotificationAsync(notifymessage).ConfigureAwait(false);
         SelectedRicName = item.RicName;
 
         await GenerateChartAndGetCompanyInfoAsync(item.RicName).ConfigureAwait(false);
@@ -356,7 +356,7 @@
             }
 
             this?.InvokeAsync(StateHasChanged);
-        }).GetAwaiter();
+        });
     }
 
     async Task GenerateChartAndGetCompanyInfoAsync(string item)
@@ -419,11 +419,11 @@
     {
         if (buttonName == "FetchBtn")
         {
-            await Task.Run(FetchSubmit).ConfigureAwait(false);
+            await FetchSubmit().ConfigureAwait(false);
         }
         else if (buttonName == "LogoffBtn")
         {
-            await Task.Run(Logoff).ConfigureAwait(false);
+            await LogoffAsync().ConfigureAwait(false);
         }
     }
 
@@ -432,66 +432,51 @@
         if (item == null)
         {
             var count = AppData.DataCache.Keys.Count;
-            var notifyMessage = new NotificationMessage()
+            var notifymessage = new NotificationMessage()
             {
                 Summary = "Item remove",
                 Detail = $"\n{count} items will be removed",
                 Severity = NotificationSeverity.Warning,
                 Duration = 4000
             };
-            await ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+            await ShowItemNotificationAsync(notifymessage).ConfigureAwait(false);
 
-            await Task.Run(() =>
+            foreach (var ric in AppData.DataCache.Keys)
             {
-                foreach (var ric in AppData.DataCache.Keys)
-                {
 
-                    RdpMarketPriceService.CloseItemStream(ric);
-                    AppData.DataCache.TryRemove(ric, out var temp);
+                await RdpMarketPriceService.CloseItemStreamAsync(ric).ConfigureAwait(false);
+                AppData.DataCache.TryRemove(ric, out var temp);
 
-                }
-            }).ConfigureAwait(false);
+            }
             GraphVisible = false;
 
-            notifyMessage = new NotificationMessage()
+            notifymessage = new NotificationMessage()
             {
                 Summary = "Items remove complete",
                 Detail = $"{count} items has been removed",
                 Severity = NotificationSeverity.Success,
                 Duration = 4000
             };
-            await ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+            await ShowItemNotificationAsync(notifymessage).ConfigureAwait(false);
         }
         else
         {
-            await Task.Run(()=>
+            await RdpMarketPriceService.CloseItemStreamAsync(item.RicName).ConfigureAwait(false);
+            if (AppData.DataCache.TryRemove(item.RicName, out var temp) && AppData.UseRDP)
             {
-                RdpMarketPriceService.CloseItemStream(item.RicName);
-                if (!AppData.DataCache.TryRemove(item.RicName, out var temp) || !AppData.UseRDP) return;
-                if (SelectedRicName == item.RicName)
-                    GraphVisible = false;
-            }).ConfigureAwait(false);
-
+                if(SelectedRicName == item.RicName)
+                    GraphVisible=false;
+            }
         }
         this?.InvokeAsync(StateHasChanged);
     }
 
-    void Logoff()
+    async Task LogoffAsync()
     {
-        var notifyMessage = new NotificationMessage()
-        {
-            Summary = "Log off",
-            Detail = $"Log off please wait...",
-            Severity = NotificationSeverity.Success,
-            Duration = 1500
-        };
-        ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
         foreach (var item in AppData.DataCache.Keys)
         {
-            RdpMarketPriceService.CloseItemStream(item);
+            await RdpMarketPriceService.CloseItemStreamAsync(item).ConfigureAwait(false);
         }
-
-
         AppData.DataCache.Clear();
         RdpSession.CloseSession();
         RdpSession.IsLoggedIn = false;
@@ -501,56 +486,58 @@
     }
 
 
-    private void FetchSubmit()
+    private async Task FetchSubmit()
     {
         char[] separator = { ',', ' ' };
         var itemList = InputRics.Split(separator).Select(x => x.Trim()).Where(y => y != string.Empty).ToList<string>();
         var sentList = new List<string>();
+        var duplicateList = new List<string>();
         foreach (var itemname in itemList)
         {
-            var data = new MarketPriceData { RicName = itemname };
+            MarketPriceData data = new MarketPriceData { RicName = itemname };
             if (AppData.DataCache.TryAdd(itemname, data))
             {
-                RdpMarketPriceService.OpenItem(itemname, RdpSession.ServiceSession, typeof(MarketPriceData));
+                await RdpMarketPriceService.OpenItemAsync(itemname, RdpSession.ServiceSession, typeof(MarketPriceData)).ConfigureAwait(false);
                 sentList.Add(itemname);
             }
             else
             {
-                var notifyMessage = new NotificationMessage()
-                {
-                    Summary = "Request Duplicate",
-                    Detail = $"{itemname} already in the list",
-                    Severity = NotificationSeverity.Warning,
-                    Duration = 2000
-                };
-                ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+                duplicateList.Add(itemname);
             }
         }
-        if (sentList.Any() && sentList.Count <= 10)
-        {
-            var detailsTxt = $"Sent a new request for {string.Join(" ", sentList)}";
 
-            var notifyMessage = new NotificationMessage()
-            {
-                Summary = "Request Sent",
-                Detail = detailsTxt,
-                Severity = NotificationSeverity.Info,
-                Duration = 4000
-            };
-            ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+        var notifymessage = new NotificationMessage()
+        {
+            Summary = "Request Duplicate",
+            Severity = NotificationSeverity.Warning,
+            Duration = 2000
+        };
+        if (duplicateList.Any() && duplicateList.Count <= 15)
+        {
+            notifymessage.Detail = $"{string.Join(' ', duplicateList)} already in the list";
+            await ShowItemNotificationAsync(notifymessage).ConfigureAwait(false);
         }
-        else if(sentList.Count>10)
+        else if(duplicateList.Count>15)
         {
-            var detailsTxt = $"Sent a bulk requests for {sentList.Count} items ";
+            notifymessage.Detail = $"{duplicateList.Count} items already in the list";
+            await ShowItemNotificationAsync(notifymessage).ConfigureAwait(false);
+        }
 
-            var notifyMessage = new NotificationMessage()
-            {
-                Summary = "Bulk Request Sent",
-                Detail = detailsTxt,
-                Severity = NotificationSeverity.Info,
-                Duration = 4000
-            };
-            ShowItemNotificationAsync(notifyMessage).ConfigureAwait(false);
+        var notifySentMessage = new NotificationMessage()
+        {
+            Summary = "Request Sent",
+            Severity = NotificationSeverity.Info,
+            Duration = 4000
+        };
+        if (sentList.Any() && sentList.Count <= 15)
+        {
+            notifySentMessage.Detail= $"Sent a new request for {string.Join(" ", sentList)}";
+            await ShowItemNotificationAsync(notifySentMessage).ConfigureAwait(false);
+        }
+        else if(sentList.Count>15)
+        {
+            notifySentMessage.Detail= $"Sent a new request for {sentList.Count} items";
+            await ShowItemNotificationAsync(notifySentMessage).ConfigureAwait(false);
         }
         InputRics = string.Empty;
         this?.InvokeAsync(StateHasChanged);
@@ -559,27 +546,33 @@
 
     private void OnRespMessage(object o, OnResponseMessageEventArgs e)
     {
+
         try
         {
             switch (e.MessageType)
             {
                 case MessageTypeEnum.Refresh:
                     {
-                   
+                        Task.Run(() =>
+                        {
                             var refreshMessage = e.RespMessage as MarketPriceRefreshMessage;
                             var itemName = refreshMessage.Key != null ? refreshMessage.Key.Name.FirstOrDefault() : string.Empty;
                             if (refreshMessage.Fields != null)
                             {
-                                var fxrateData = (MarketPriceData)RdpMarketPriceService.FieldListToMarketPriceDataAsync<MarketPriceData>(refreshMessage.Fields).GetAwaiter().GetResult();
+                                var fxrateData = (MarketPriceData)RdpMarketPriceService.FieldListToMarketPriceData<MarketPriceData>(refreshMessage.Fields);
                                 fxrateData.StreamId = refreshMessage.ID;
                                 fxrateData.RicName = itemName;
                                 AppData.DataCache.AddOrUpdate(itemName, fxrateData, (oldkey, oldvalue) => fxrateData);
                             }
+                            this?.InvokeAsync(StateHasChanged);
+                        });
                     }
                     break;
                 case MessageTypeEnum.Update:
                     {
-                        var updateMessage = e.RespMessage as MarketPriceUpdateMessage;
+                        Task.Run(() =>
+                        {
+                            var updateMessage = e.RespMessage as MarketPriceUpdateMessage;
                             var itemName = updateMessage.Key != null ? updateMessage.Key.Name.FirstOrDefault() : string.Empty;
                             var streamId = updateMessage.ID;
                             if (itemName == string.Empty)
@@ -592,11 +585,12 @@
                             {
                                 if (AppData.DataCache.TryGetValue(itemName, out var tempDict))
                                 {
-                                    var updatedData=Task.Run<IMarketData>(()=>RdpMarketPriceService.UpdateFieldListWithFieldUpdate<MarketPriceData>(updateMessage.Fields, tempDict)).GetAwaiter().GetResult();
+                                    var updatedData=RdpMarketPriceService.UpdateFieldListWithFieldUpdate<MarketPriceData>(updateMessage.Fields, tempDict);
                                     AppData.DataCache.AddOrUpdate(itemName, (MarketPriceData)updatedData, (oldkey, oldvalue) => tempDict);
                                 }
                                 this?.InvokeAsync(StateHasChanged);
                             }
+                        });
                     }
                     break;
                 case MessageTypeEnum.Status:
