@@ -22,9 +22,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
-    <PackageReference Include="Radzen.Blazor" Version="2.9.6" />
-    <PackageReference Include="Refinitiv.DataPlatform" Version="0.0.6" />
-    <PackageReference Include="Refinitiv.DataPlatform.Content" Version="0.0.3" />
+    <PackageReference Include="Radzen.Blazor" Version="2.10.16" />
+    <PackageReference Include="Refinitiv.DataPlatform" Version="1.0.0-alpha" />
   </ItemGroup>
 
 </Project>
