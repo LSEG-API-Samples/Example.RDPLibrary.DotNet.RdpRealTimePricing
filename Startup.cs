@@ -25,13 +25,21 @@ namespace RdpRealTimePricing
         {
   
             services.AddRazorPages();
-            services.AddServerSideBlazor();
+            services.AddSignalR(e => {
+                e.MaximumReceiveMessageSize = 102400000;
+            });
+            services.AddServerSideBlazor().AddHubOptions(x => x.MaximumReceiveMessageSize = 102400000);
             services.AddScoped<RdpSession>();
             services.AddScoped<RdpMarketPriceService>();
             services.AddScoped<DialogService>();
             services.AddScoped<NotificationService>();
             services.AddScoped<AppData>();
-         
+            services.AddDistributedMemoryCache();
+
+            services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = long.MaxValue;
+            });
 
         }
 
