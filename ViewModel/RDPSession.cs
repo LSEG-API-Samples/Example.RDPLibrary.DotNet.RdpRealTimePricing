@@ -71,7 +71,7 @@ namespace RdpRealTimePricing.ViewModel
                 {
                     System.Console.WriteLine("Start RDP PlatformSession");
                     _session = CoreFactory.CreateSession(new PlatformSession.Params()
-                        .OAuthGrantType(new GrantPassword().UserName(RdpUser)
+                        .WithOAuthGrantType(new GrantPassword().UserName(RdpUser)
                             .Password(RdpPassword))
                         .AppKey(RdpAppKey)
                         .WithTakeSignonControl(true)
